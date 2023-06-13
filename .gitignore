@@ -17,6 +17,7 @@
 
 # Environment variables
 /.env
+!/.env.example
 
 # Testing artifacts
 /coverage
