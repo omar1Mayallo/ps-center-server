@@ -8,7 +8,8 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import hpp from "hpp";
-import sanitizeInput from "./middlewares/xss";
+import authRouter from "./auth/auth.router";
+import userRouter from "./users/user.router";
 
 //_________EXPRESS_APP_________//
 const app = express();
@@ -52,15 +53,13 @@ app.use(
 // a)protect from No Sql Injection
 app.use(mongoSanitize());
 
-// b)protect from xss
-app.use(sanitizeInput);
-
 // 6) HPP (protect against HTTP Parameter Pollution)
 app.use(hpp());
 
 //___________________________ROUTES___________________________//
 // 1) Base Routes
-// app.use(baseRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/users", userRouter);
 
 // 2) 404 Urls
 app.all("*", routeNotFoundError);

@@ -5,11 +5,11 @@ import {
 //______UNCAUGHT_EXCEPTIONS______//
 process.on("uncaughtException", uncaughtException);
 import app from "./app";
-// import connectToDB from "./config/dbConnection.js";
 import env from "./config/env";
+import connectToDB from "./config/db";
 
 //______DB_CONNECTING______//
-// connectToDB();
+connectToDB();
 
 //______SERVER______//
 const PORT = env.PORT || 5000;

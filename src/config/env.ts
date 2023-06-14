@@ -1,4 +1,4 @@
-import {cleanEnv, port, str} from "envalid";
+import {cleanEnv, port, str, num} from "envalid";
 import dotenv from "dotenv";
 
 //_________ENV_VARIABLES_________//
@@ -11,7 +11,7 @@ export default cleanEnv(process.env, {
   SERVER_URL: str(),
   MONGO_URI: str(),
   DB_NAME: str(),
-  // JWT_SECRET: str(),
-  // JWT_EXPIRE_IN: str(),
-  // JWT_COOKIE_EXPIRE_IN: num(),
+  JWT_SECRET: str(),
+  JWT_EXPIRE_IN: str(),
+  JWT_COOKIE_EXPIRE_IN: num(),
 });
