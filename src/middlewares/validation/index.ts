@@ -12,6 +12,12 @@ function extractErrorMessages(errors: ValidationError[]): string[] {
   return errors.map((error) => Object.values(error.constraints!)).flat();
 }
 
+//_REFACTORING
+function validateObject(obj: object, dto: any) {
+  const objectInstance = plainToInstance(dto, obj);
+  return validate(objectInstance!);
+}
+
 /*
 @DESC : This is a validation middleware function to validate request(body, query, params) using class-validator
 
@@ -24,24 +30,19 @@ export const validateRequest =
     let errs: ValidationError[] = [];
 
     // 2) Validate incoming request
-    // a) req.body
-    if (Object.keys(req.body).length > 0) {
-      const bodyObject = plainToInstance(dto, req.body);
-      const validationErrors = await validate(bodyObject);
-      if (validationErrors) errs.push(...validationErrors);
+    // _REFACTORING
+    async function validateAndPushErrors(obj: object) {
+      if (Object.keys(obj).length > 0) {
+        const validationErrors = await validateObject(obj, dto);
+        errs.push(...validationErrors);
+      }
     }
-    // b) req.query
-    if (Object.keys(req.query).length > 0) {
-      const queryObject = plainToInstance(dto, req.query);
-      const validationErrors = await validate(queryObject!);
-      if (validationErrors) errs.push(...validationErrors);
-    }
-    // c) req.params
-    if (Object.keys(req.params).length > 0) {
-      const paramsObject = plainToInstance(dto, req.params);
-      const validationErrors = await validate(paramsObject!);
-      if (validationErrors) errs.push(...validationErrors);
-    }
+
+    await Promise.all([
+      validateAndPushErrors(req.body),
+      validateAndPushErrors(req.query),
+      validateAndPushErrors(req.params),
+    ]);
 
     // 3) Extract error messages from err[] reference
     const errors = extractErrorMessages(errs);
