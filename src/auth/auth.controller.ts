@@ -8,7 +8,7 @@ import {UserLoginDto, UserRegisterDto} from "./auth.dto";
 
 // ---------------------------------
 // @desc    Register
-// @route   POST  /user/register
+// @route   POST  /auth/register
 // @access  Public
 // ---------------------------------
 export const register: RequestHandler<unknown, unknown, UserRegisterDto> =
@@ -44,7 +44,7 @@ export const register: RequestHandler<unknown, unknown, UserRegisterDto> =
 
 // ---------------------------------
 // @desc    login
-// @route   POST  /user/login
+// @route   POST  /auth/login
 // @access  Public
 // ---------------------------------
 export const login: RequestHandler<unknown, unknown, UserLoginDto> =

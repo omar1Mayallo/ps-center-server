@@ -1,12 +1,42 @@
-interface UserLoginDto {
-  email: string;
-  password: string;
-}
+import {
+  IsString,
+  IsNotEmpty,
+  IsEmail,
+  MinLength,
+  MaxLength,
+} from "class-validator";
+import {validateRequest} from "../middlewares/validation";
 
-interface UserRegisterDto {
-  username: string;
-  email: string;
-  password: string;
-}
+// LOGIN
+class UserLoginDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email!: string;
 
-export {UserLoginDto, UserRegisterDto};
+  @MaxLength(25)
+  @MinLength(6)
+  @IsNotEmpty()
+  password!: string;
+}
+const loginValidation = validateRequest(UserLoginDto);
+
+// REGISTER
+class UserRegisterDto {
+  @MaxLength(30)
+  @MinLength(3)
+  @IsString()
+  @IsNotEmpty()
+  username!: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email!: string;
+
+  @MaxLength(25)
+  @MinLength(6)
+  @IsNotEmpty()
+  password!: string;
+}
+const registerValidation = validateRequest(UserRegisterDto);
+
+export {UserLoginDto, UserRegisterDto, loginValidation, registerValidation};
