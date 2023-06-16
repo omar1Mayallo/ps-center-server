@@ -1,15 +1,15 @@
-import {UNAUTHORIZED} from "http-status";
+import {NextFunction, Request, Response} from "express";
+import asyncHandler from "express-async-handler";
+import {FORBIDDEN, UNAUTHORIZED} from "http-status";
 import User, {UserDocument} from "../../users/user.model";
 import APIError from "../../utils/ApiError";
 import {verifyToken} from "../../utils/tokenHandler";
-import {Request, Response, NextFunction} from "express";
-import asyncHandler from "express-async-handler";
 
 interface AuthRequest extends Request {
   user: UserDocument;
 }
 
-// @desc    isAuthenticated Middleware
+// @desc   isAuthenticated Middleware
 export const isAuth = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     // 1) Check if token is exist from req.headers.authorization(Bearer token)
@@ -57,7 +57,7 @@ export const allowedTo = (...roles: string[]) => {
           `You as ${
             (req as AuthRequest).user.role
           } do not have permission to perform this action`,
-          403
+          FORBIDDEN
         )
       );
     }

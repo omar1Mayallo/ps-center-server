@@ -1,4 +1,4 @@
-import {Response, NextFunction, Request} from "express";
+import {NextFunction, Request, Response} from "express";
 import {INTERNAL_SERVER_ERROR} from "http-status";
 import APIError from "../../utils/ApiError";
 import {handleJwtExpiredError, handleJwtInvalidError} from "./errors";

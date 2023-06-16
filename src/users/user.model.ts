@@ -43,8 +43,8 @@ const userSchema = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum: Object.values(UserRoles), // Use enum values as allowed values
-      default: UserRoles.USER, // Set default role to "user"
+      enum: Object.values(UserRoles),
+      default: UserRoles.USER,
     },
   },
   {timestamps: true}

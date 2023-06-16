@@ -1,11 +1,11 @@
 import {
-  IsString,
-  IsNotEmpty,
   IsEmail,
-  MinLength,
+  IsNotEmpty,
+  IsString,
   MaxLength,
+  MinLength,
 } from "class-validator";
-import {validateRequest} from "../middlewares/validation";
+import {validateReqBody} from "../middlewares/validation";
 
 // LOGIN
 class UserLoginDto {
@@ -18,7 +18,7 @@ class UserLoginDto {
   @IsNotEmpty()
   password!: string;
 }
-const loginValidation = validateRequest(UserLoginDto);
+const loginValidation = validateReqBody(UserLoginDto);
 
 // REGISTER
 class UserRegisterDto {
@@ -37,6 +37,6 @@ class UserRegisterDto {
   @IsNotEmpty()
   password!: string;
 }
-const registerValidation = validateRequest(UserRegisterDto);
+const registerValidation = validateReqBody(UserRegisterDto);
 
 export {UserLoginDto, UserRegisterDto, loginValidation, registerValidation};

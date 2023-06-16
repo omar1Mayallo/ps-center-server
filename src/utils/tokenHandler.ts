@@ -1,6 +1,6 @@
+import {Response} from "express";
 import jwt from "jsonwebtoken";
 import env from "../config/env";
-import {Response} from "express";
 import {UserDocument} from "../users/user.model";
 
 //_SIGN_TOKEN_//
@@ -24,7 +24,7 @@ function generateSendToken(
   const token = signToken(user._id.toString());
 
   // Delete password field from output
-  // user.password = undefined;
+  user.password = undefined as any;
 
   res.status(statusCode).json({
     status: "success",
@@ -33,4 +33,4 @@ function generateSendToken(
   });
 }
 
-export {signToken, verifyToken, generateSendToken};
+export {generateSendToken, signToken, verifyToken};

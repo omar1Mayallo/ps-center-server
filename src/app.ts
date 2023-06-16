@@ -1,15 +1,16 @@
-import "reflect-metadata";
-import express from "express";
 import cors from "cors";
-import morgan from "morgan";
-import env from "./config/env";
-import globalErrorMiddleware from "./middlewares/error";
-import {routeNotFoundError} from "./middlewares/error/errors";
+import express from "express";
+import mongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import mongoSanitize from "express-mongo-sanitize";
 import hpp from "hpp";
+import morgan from "morgan";
+import "reflect-metadata";
 import authRouter from "./auth/auth.router";
+import env from "./config/env";
+import deviceRouter from "./devices/device.router";
+import globalErrorMiddleware from "./middlewares/error";
+import {routeNotFoundError} from "./middlewares/error/errors";
 import userRouter from "./users/user.router";
 
 //_________EXPRESS_APP_________//
@@ -61,6 +62,7 @@ app.use(hpp());
 // 1) Base Routes
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
+app.use("/api/devices", deviceRouter);
 
 // 2) 404 Urls
 app.all("*", routeNotFoundError);

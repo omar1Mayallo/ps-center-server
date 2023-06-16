@@ -1,7 +1,7 @@
-import {Request, Response, NextFunction} from "express";
-import {validate, ValidationError} from "class-validator";
-import {BAD_REQUEST} from "http-status";
 import {plainToInstance} from "class-transformer";
+import {ValidationError, validate} from "class-validator";
+import {RequestHandler} from "express";
+import {BAD_REQUEST} from "http-status";
 
 /*
 @DESC : Role of this function is to get only the error messages from constraints object and put in string[]. You can see full structure of error object in class-validator docs. 
@@ -18,40 +18,64 @@ function validateObject(obj: object, dto: any) {
   return validate(objectInstance!);
 }
 
-/*
-@DESC : This is a validation middleware function to validate request(body, query, params) using class-validator
+//_REFACTORING
+async function validateAndPushErrors(
+  obj: object,
+  dto: any,
+  errs: ValidationError[]
+) {
+  if (Object.keys(obj).length > 0) {
+    const validationErrors = await validateObject(obj, dto);
+    errs.push(...validationErrors);
+  }
+}
 
-@NOTE : Why we use the plainToInstance method here?
-The plainToInstance function is used to transform the plain JavaScript objects (req.body, req.query, and req.params) into instances of the DTO class. Then, the validate function from class-validator is called to perform the validation, and any validation errors are collected.
-*/
-export const validateRequest =
-  (dto: any) => async (req: Request, res: Response, next: NextFunction) => {
-    // 1) Init a err[] reference
+//___________REQUEST_BODY_VALIDATION___________//
+const validateReqBody =
+  (dto: any): RequestHandler =>
+  async (req, res, next) => {
     let errs: ValidationError[] = [];
-
-    // 2) Validate incoming request
-    // _REFACTORING
-    async function validateAndPushErrors(obj: object) {
-      if (Object.keys(obj).length > 0) {
-        const validationErrors = await validateObject(obj, dto);
-        errs.push(...validationErrors);
-      }
-    }
-
-    await Promise.all([
-      validateAndPushErrors(req.body),
-      validateAndPushErrors(req.query),
-      validateAndPushErrors(req.params),
-    ]);
-
-    // 3) Extract error messages from err[] reference
+    await validateAndPushErrors(req.body, dto, errs);
+    // Extract error messages from err[] reference
     const errors = extractErrorMessages(errs);
-
-    // 4) If errors return it
+    // If errors return it
     if (errors.length > 0) {
       return res.status(BAD_REQUEST).json({status: "validation-error", errors});
     }
-
-    // 5) If no validation errors go to next middleware
+    // If no validation errors go to next middleware
     next();
   };
+
+//___________REQUEST_PARAMS_VALIDATION___________//
+const validateReqParams =
+  (dto: any): RequestHandler =>
+  async (req, res, next) => {
+    let errs: ValidationError[] = [];
+    await validateAndPushErrors(req.params, dto, errs);
+    // Extract error messages from err[] reference
+    const errors = extractErrorMessages(errs);
+    // If errors return it
+    if (errors.length > 0) {
+      return res.status(BAD_REQUEST).json({status: "validation-error", errors});
+    }
+    // If no validation errors go to next middleware
+    next();
+  };
+
+//___________REQUEST_QUERY_VALIDATION___________//
+const validateReqQuery =
+  (dto: any): RequestHandler =>
+  async (req, res, next) => {
+    let errs: ValidationError[] = [];
+    await validateAndPushErrors(req.query, dto, errs);
+    // Extract error messages from err[] reference
+    const errors = extractErrorMessages(errs);
+    // If errors return it
+    if (errors.length > 0) {
+      return res.status(BAD_REQUEST).json({status: "validation-error", errors});
+    }
+    // If no validation errors go to next middleware
+    next();
+  };
+
+export {validateReqBody, validateReqParams, validateReqQuery};
