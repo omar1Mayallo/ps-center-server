@@ -36,6 +36,7 @@ const gameSessionSchema = new mongoose.Schema<GameSessionDocument>(
     },
     sessionPrice: {
       type: Number,
+      set: (val: number) => Math.round(val * 100) / 100,
     },
   },
   {timestamps: true}

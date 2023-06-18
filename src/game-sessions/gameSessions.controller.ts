@@ -2,6 +2,7 @@ import {RequestHandler} from "express";
 import asyncHandler from "express-async-handler";
 import {UpdateGameSessionBodyDto} from "./gameSessions.dto";
 import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
+import Session from "./gameSessions.model";
 
 // ---------------------------------
 // @desc    Get All Sessions
@@ -9,7 +10,22 @@ import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
 // @access  Private("ADMIN", "OWNER")
 // ---------------------------------
 const getAllGameSessions: RequestHandler = asyncHandler(
-  async (req, res, next) => {}
+  async (req, res, next) => {
+    const docs = await Session.find()
+      .populate({
+        path: "device",
+        select: "name type sessionType",
+      })
+      .sort("-createdAt")
+      .select("-__v");
+    res.status(200).json({
+      status: "success",
+      results: docs.length,
+      data: {
+        docs,
+      },
+    });
+  }
 );
 
 // ---------------------------------
@@ -40,3 +56,5 @@ const updateSingleGameSession: RequestHandler<
 const deleteSingleGameSession: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
   async (req, res, next) => {}
 );
+
+export {getAllGameSessions};

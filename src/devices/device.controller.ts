@@ -141,14 +141,24 @@ const startTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
     }
 
     // 2) Update the device status
-    device.startTime = Date.now();
-    device.isEmpty = false;
-    await device.save();
+    await Device.updateOne(
+      {_id: id},
+      {
+        $set: {
+          startTime: Date.now(),
+          isEmpty: false,
+        },
+      },
+      {runValidators: false} // Disable validators
+    );
+
+    // Fetch the updated device
+    const updatedDevice = await Device.findById(id);
 
     res.status(OK).json({
       status: "success",
       data: {
-        device,
+        updatedDevice,
       },
     });
   }
@@ -206,11 +216,18 @@ const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
 
     //6) If session created >> Reset Device
     if (session) {
-      device.sessionType = SessionTypes.DUO;
-      device.startTime = undefined;
-      device.endTime = undefined;
-      device.isEmpty = true;
-      await device.save();
+      await Device.updateOne(
+        {_id: id},
+        {
+          $set: {
+            sessionType: SessionTypes.DUO,
+            startTime: undefined,
+            endTime: undefined,
+            isEmpty: true,
+          },
+        },
+        {runValidators: false} // Disable validators
+      );
 
       res.status(CREATED).json({
         status: "success",

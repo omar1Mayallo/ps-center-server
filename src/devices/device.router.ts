@@ -29,7 +29,7 @@ router
   .put(updateDeviceValidation, updateSingleDevice)
   .delete(deleteSingleDevice);
 
-router.route("/start-time/:id").patch(startTime);
-router.route("/end-time/:id").post(endTime);
+router.route("/:id/start-time").patch(startTime);
+router.route("/:id/end-time").post(endTime);
 
 export default router;
