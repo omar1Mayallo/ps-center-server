@@ -6,12 +6,11 @@ import {
   getAllDevices,
   getSingleDevice,
   updateSingleDevice,
+  startTime,
+  endTime,
 } from "./device.controller";
-import {
-  createDeviceValidation,
-  deviceIdValidation,
-  updateDeviceValidation,
-} from "./device.dto";
+import {createDeviceValidation, updateDeviceValidation} from "./device.dto";
+import {paramIsMongoIdValidation} from "../middlewares/validation/validators";
 
 const router = express.Router();
 
@@ -23,11 +22,14 @@ router.use(allowedTo("OWNER"));
 
 router.route("/").post(createDeviceValidation, createDevice);
 
-router.use("/:id", deviceIdValidation);
+router.use("/:id", paramIsMongoIdValidation);
 router
   .route("/:id")
   .get(getSingleDevice)
   .put(updateDeviceValidation, updateSingleDevice)
   .delete(deleteSingleDevice);
+
+router.route("/start-time/:id").patch(startTime);
+router.route("/end-time/:id").post(endTime);
 
 export default router;

@@ -1,13 +1,18 @@
 import {RequestHandler} from "express";
 import asyncHandler from "express-async-handler";
-import {CREATED, NOT_FOUND, NO_CONTENT, OK} from "http-status";
-import APIError from "../utils/ApiError";
 import {
-  CreateDeviceBodyDto,
-  DeviceIdParamsDto,
-  UpdateDeviceBodyDto,
-} from "./device.dto";
+  BAD_REQUEST,
+  CREATED,
+  INTERNAL_SERVER_ERROR,
+  NOT_FOUND,
+  NO_CONTENT,
+  OK,
+} from "http-status";
+import APIError from "../utils/ApiError";
+import {CreateDeviceBodyDto, UpdateDeviceBodyDto} from "./device.dto";
 import Device from "./device.model";
+import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
+import Session, {SessionTypes} from "../game-sessions/gameSessions.model";
 
 // ---------------------------------
 // @desc    Create Device
@@ -46,7 +51,7 @@ const getAllDevices: RequestHandler = asyncHandler(async (req, res, next) => {
 // @route   GET  /devices/:id
 // @access  Private("OWNER")
 // ---------------------------------
-const getSingleDevice: RequestHandler<DeviceIdParamsDto> = asyncHandler(
+const getSingleDevice: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
   async (req, res, next) => {
     const {id} = req.params;
     const doc = await Device.findById(id).select("-__v");
@@ -66,11 +71,11 @@ const getSingleDevice: RequestHandler<DeviceIdParamsDto> = asyncHandler(
 
 // ---------------------------------
 // @desc    Update Single Device
-// @route   put  /devices/:id
+// @route   PUT  /devices/:id
 // @access  Private("OWNER")
 // ---------------------------------
 const updateSingleDevice: RequestHandler<
-  DeviceIdParamsDto,
+  ParamIsMongoIdDto,
   unknown,
   UpdateDeviceBodyDto
 > = asyncHandler(async (req, res, next) => {
@@ -98,7 +103,7 @@ const updateSingleDevice: RequestHandler<
 // @route   DELETE  /devices/:id
 // @access  Private("OWNER")
 // ---------------------------------
-const deleteSingleDevice: RequestHandler<DeviceIdParamsDto> = asyncHandler(
+const deleteSingleDevice: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
   async (req, res, next) => {
     const {id} = req.params;
     const doc = await Device.findByIdAndDelete(id);
@@ -113,10 +118,124 @@ const deleteSingleDevice: RequestHandler<DeviceIdParamsDto> = asyncHandler(
   }
 );
 
+// ---------------------------------
+// @desc    Start Time
+// @route   PATCH  /devices/start-time/:id
+// @access  Private("ADMIN", "OWNER")
+// ---------------------------------
+const startTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
+  async (req, res, next) => {
+    const {id} = req.params;
+    // 1) Find the device which we start session from it to get the session type(duo or multi)
+    const device = await Device.findById(id);
+    // [A] CHECK_POSSIBLE_ERRORS
+    // [A]-(a) Device Not Found
+    if (!device) {
+      return next(
+        new APIError(`There is no device match this id : ${id}`, NOT_FOUND)
+      );
+    }
+    // [A]-(b) Device Is Not Empty Now
+    if (!device.isEmpty) {
+      return next(new APIError(`This device is not empty now`, BAD_REQUEST));
+    }
+
+    // 2) Update the device status
+    device.startTime = Date.now();
+    device.isEmpty = false;
+    await device.save();
+
+    res.status(OK).json({
+      status: "success",
+      data: {
+        device,
+      },
+    });
+  }
+);
+
+// ---------------------------------
+// @desc    End Time And Create Game Session
+// @route   POST  /devices/end-time/:id
+// @access  Private("ADMIN", "OWNER")
+// ---------------------------------
+const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
+  async (req, res, next) => {
+    const {id} = req.params;
+    // 1) Find the device which we start session from it to get the session type(duo or multi)
+    const device = await Device.findById(id);
+    // [A] CHECK_POSSIBLE_ERRORS
+    // [A]-(a) Device Not Found
+    if (!device) {
+      return next(
+        new APIError(`There is no device match this id : ${id}`, NOT_FOUND)
+      );
+    }
+    // [A]-(b) Device Is Not Started Or Is Empty
+    if (!device.startTime || device.isEmpty) {
+      return next(
+        new APIError(
+          `Can't end time for empty device or it hasn't start time`,
+          BAD_REQUEST
+        )
+      );
+    }
+
+    // 2) Update the device status
+    device.endTime = Date.now();
+    await device.save();
+
+    // 3) Calc game session time in hours
+    const estimatedTimeInHours =
+      (device.endTime - device.startTime) / (1000 * 60 * 60);
+
+    // 4) Calc total game session price (based on device sessionType(duo or multi))
+    const gamePrice =
+      device.sessionType === SessionTypes.DUO
+        ? device.duoPricePerHour * estimatedTimeInHours
+        : device.multiPricePerHour * estimatedTimeInHours;
+
+    //5) Create a new game session
+    const session = await Session.create({
+      device: device._id,
+      type: device.sessionType,
+      estimatedTimeInHours,
+      gamePrice,
+      sessionPrice: gamePrice, // add snack order price when i create snacks logic
+    });
+
+    //6) If session created >> Reset Device
+    if (session) {
+      device.sessionType = SessionTypes.DUO;
+      device.startTime = undefined;
+      device.endTime = undefined;
+      device.isEmpty = true;
+      await device.save();
+
+      res.status(CREATED).json({
+        status: "success",
+        data: {
+          session,
+        },
+      });
+    } else {
+      // else >> return error
+      return next(
+        new APIError(
+          `Fail to end time and create new session`,
+          INTERNAL_SERVER_ERROR
+        )
+      );
+    }
+  }
+);
+
 export {
   createDevice,
   deleteSingleDevice,
   getAllDevices,
   getSingleDevice,
   updateSingleDevice,
+  startTime,
+  endTime,
 };

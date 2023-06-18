@@ -12,6 +12,7 @@ import deviceRouter from "./devices/device.router";
 import globalErrorMiddleware from "./middlewares/error";
 import {routeNotFoundError} from "./middlewares/error/errors";
 import userRouter from "./users/user.router";
+import gameSessionsRouter from "./game-sessions/gameSessions.router";
 
 //_________EXPRESS_APP_________//
 const app = express();
@@ -63,6 +64,7 @@ app.use(hpp());
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/devices", deviceRouter);
+app.use("/api/game-sessions", gameSessionsRouter);
 
 // 2) 404 Urls
 app.all("*", routeNotFoundError);

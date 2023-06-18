@@ -1,5 +1,4 @@
 import {
-  IsMongoId,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -7,14 +6,7 @@ import {
   MinLength,
   MaxLength,
 } from "class-validator";
-import {validateReqBody, validateReqParams} from "../middlewares/validation";
-
-// DEVICE_ID
-class DeviceIdParamsDto {
-  @IsMongoId({message: "Invalid id format"})
-  id!: string;
-}
-const deviceIdValidation = validateReqParams(DeviceIdParamsDto);
+import {validateReqBody} from "../middlewares/validation";
 
 // CREATE_DEVICE
 class CreateDeviceBodyDto {
@@ -59,10 +51,8 @@ class UpdateDeviceBodyDto {
 const updateDeviceValidation = validateReqBody(UpdateDeviceBodyDto);
 
 export {
-  DeviceIdParamsDto,
   UpdateDeviceBodyDto,
   CreateDeviceBodyDto,
   createDeviceValidation,
-  deviceIdValidation,
   updateDeviceValidation,
 };

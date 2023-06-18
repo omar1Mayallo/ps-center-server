@@ -1,9 +1,5 @@
-import mongoose, {Date, Document, Schema, Types} from "mongoose";
-
-export enum SessionTypes {
-  DUO = "DUO",
-  MULTI = "MULTI",
-}
+import mongoose, {Document, Schema, Types} from "mongoose";
+import {SessionTypes} from "../game-sessions/gameSessions.model";
 
 export interface DeviceDocument extends Document {
   _id: Types.ObjectId;
@@ -12,9 +8,8 @@ export interface DeviceDocument extends Document {
   sessionType: SessionTypes;
   multiPricePerHour: number;
   duoPricePerHour: number;
-  startTime: Date;
-  endTime: Date;
-  totalTime: Date;
+  startTime: number | undefined;
+  endTime: number | undefined;
   isEmpty: boolean;
 }
 
@@ -47,9 +42,8 @@ const deviceSchema = new Schema<DeviceDocument>(
       type: Number,
       required: [true, "duoPricePerHour is required"],
     },
-    startTime: {type: Date},
-    endTime: {type: Date},
-    totalTime: {type: Date},
+    startTime: {type: Number},
+    endTime: {type: Number},
     isEmpty: {
       type: Boolean,
       default: true,
