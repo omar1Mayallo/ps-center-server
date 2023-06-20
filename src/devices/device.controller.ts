@@ -120,7 +120,7 @@ const deleteSingleDevice: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
 
 // ---------------------------------
 // @desc    Start Time
-// @route   PATCH  /devices/start-time/:id
+// @route   PATCH  /devices/:id/start-time
 // @access  Private("ADMIN", "OWNER")
 // ---------------------------------
 const startTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
@@ -166,7 +166,7 @@ const startTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
 
 // ---------------------------------
 // @desc    End Time And Create Game Session
-// @route   POST  /devices/end-time/:id
+// @route   POST  /devices/:id/end-time
 // @access  Private("ADMIN", "OWNER")
 // ---------------------------------
 const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
@@ -221,8 +221,8 @@ const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
         {
           $set: {
             sessionType: SessionTypes.DUO,
-            startTime: undefined,
-            endTime: undefined,
+            startTime: null,
+            endTime: null,
             isEmpty: true,
           },
         },
@@ -247,6 +247,66 @@ const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
   }
 );
 
+// ---------------------------------
+// @desc    Reset Single Device
+// @route   PUT  /devices/:id/reset
+// @access  Private("ADMIN", "OWNER")
+// ---------------------------------
+const resetSingleDevice: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
+  async (req, res, next) => {
+    const {id} = req.params;
+
+    const doc = await Device.findByIdAndUpdate(
+      id,
+      {
+        sessionType: "DUO",
+        isEmpty: true,
+        // $unset[https://www.mongodb.com/docs/manual/reference/operator/update/unset/][https://stackoverflow.com/questions/6327893/mongodb-update-modifier-semantics-of-unset]
+        $unset: {["startTime"]: 1, ["endTime"]: 1},
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+    if (!doc) {
+      return next(
+        new APIError(`There is no device match this id : ${id}`, NOT_FOUND)
+      );
+    }
+    res.status(OK).json({
+      status: "success",
+      data: {
+        doc,
+      },
+    });
+  }
+);
+
+// ---------------------------------
+// @desc    Reset All Devices
+// @route   PUT  /devices/reset
+// @access  Private("ADMIN", "OWNER")
+// ---------------------------------
+const resetAllDevices: RequestHandler = asyncHandler(async (req, res, next) => {
+  const doc = await Device.updateMany(
+    {},
+    {
+      sessionType: "DUO",
+      isEmpty: true,
+      // $unset[https://www.mongodb.com/docs/manual/reference/operator/update/unset/][https://stackoverflow.com/questions/6327893/mongodb-update-modifier-semantics-of-unset]
+      $unset: {["startTime"]: 1, ["endTime"]: 1},
+    }
+  );
+
+  res.status(OK).json({
+    status: "success",
+    data: {
+      doc,
+    },
+  });
+});
+
 export {
   createDevice,
   deleteSingleDevice,
@@ -255,4 +315,6 @@ export {
   updateSingleDevice,
   startTime,
   endTime,
+  resetSingleDevice,
+  resetAllDevices,
 };

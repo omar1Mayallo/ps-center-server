@@ -8,6 +8,8 @@ import {
   updateSingleDevice,
   startTime,
   endTime,
+  resetSingleDevice,
+  resetAllDevices,
 } from "./device.controller";
 import {createDeviceValidation, updateDeviceValidation} from "./device.dto";
 import {paramIsMongoIdValidation} from "../middlewares/validation/validators";
@@ -15,12 +17,13 @@ import {paramIsMongoIdValidation} from "../middlewares/validation/validators";
 const router = express.Router();
 
 router.use(isAuth);
+// router.use(allowedTo("OWNER"));
 
-router.route("/").get(allowedTo("OWNER", "ADMIN"), getAllDevices);
-
-router.use(allowedTo("OWNER"));
+router.route("/").get(getAllDevices);
 
 router.route("/").post(createDeviceValidation, createDevice);
+
+router.route("/reset").put(resetAllDevices);
 
 router.use("/:id", paramIsMongoIdValidation);
 router
@@ -31,5 +34,6 @@ router
 
 router.route("/:id/start-time").patch(startTime);
 router.route("/:id/end-time").post(endTime);
+router.route("/:id/reset").put(resetSingleDevice);
 
 export default router;

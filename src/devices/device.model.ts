@@ -8,8 +8,8 @@ export interface DeviceDocument extends Document {
   sessionType: SessionTypes;
   multiPricePerHour: number;
   duoPricePerHour: number;
-  startTime: number | undefined;
-  endTime: number | undefined;
+  startTime: number | null;
+  endTime: number | null;
   isEmpty: boolean;
 }
 

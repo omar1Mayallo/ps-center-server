@@ -1,8 +1,9 @@
 import {RequestHandler} from "express";
 import asyncHandler from "express-async-handler";
-import {UpdateGameSessionBodyDto} from "./gameSessions.dto";
 import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
 import Session from "./gameSessions.model";
+import APIError from "../utils/ApiError";
+import {NOT_FOUND, NO_CONTENT, OK} from "http-status";
 
 // ---------------------------------
 // @desc    Get All Sessions
@@ -34,19 +35,25 @@ const getAllGameSessions: RequestHandler = asyncHandler(
 // @access  Private("ADMIN", "OWNER")
 // ---------------------------------
 const getSingleGameSession: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
-  async (req, res, next) => {}
+  async (req, res, next) => {
+    const {id} = req.params;
+    const doc = await Session.findById(id).select("-__v");
+    if (!doc) {
+      return next(
+        new APIError(
+          `There is no game session match this id : ${id}`,
+          NOT_FOUND
+        )
+      );
+    }
+    res.status(OK).json({
+      status: "success",
+      data: {
+        doc,
+      },
+    });
+  }
 );
-
-// ---------------------------------
-// @desc    Update Single Game Session
-// @route   PATCH  /game-sessions/:id
-// @access  Private("ADMIN", "OWNER")
-// ---------------------------------
-const updateSingleGameSession: RequestHandler<
-  ParamIsMongoIdDto,
-  unknown,
-  UpdateGameSessionBodyDto
-> = asyncHandler(async (req, res, next) => {});
 
 // ---------------------------------
 // @desc    Delete Single Game Session
@@ -54,7 +61,40 @@ const updateSingleGameSession: RequestHandler<
 // @access  Private("OWNER")
 // ---------------------------------
 const deleteSingleGameSession: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
-  async (req, res, next) => {}
+  async (req, res, next) => {
+    const {id} = req.params;
+    const doc = await Session.findByIdAndDelete(id);
+    if (!doc) {
+      return next(
+        new APIError(
+          `There is no game session match this id : ${id}`,
+          NOT_FOUND
+        )
+      );
+    }
+    res.status(NO_CONTENT).json({
+      status: "success",
+    });
+  }
 );
 
-export {getAllGameSessions};
+// ---------------------------------
+// @desc    Delete Single Game Session
+// @route   DELETE  /game-sessions/:id
+// @access  Private("OWNER")
+// ---------------------------------
+const deleteAllGameSessions: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
+  async (req, res, next) => {
+    const result = await Session.deleteMany();
+    res.status(NO_CONTENT).json({
+      status: "success",
+    });
+  }
+);
+
+export {
+  getAllGameSessions,
+  getSingleGameSession,
+  deleteAllGameSessions,
+  deleteSingleGameSession,
+};
