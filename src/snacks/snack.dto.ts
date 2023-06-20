@@ -17,7 +17,7 @@ class CreateSnackBodyDto {
 
   @IsNumber()
   @IsNotEmpty()
-  quantity!: number;
+  quantityInStock!: number;
 }
 const createSnackValidation = validateReqBody(CreateSnackBodyDto);
 
@@ -37,7 +37,7 @@ class UpdateSnackBodyDto {
 
   @IsNumber()
   @IsOptional()
-  quantity?: number;
+  quantityInStock?: number;
 }
 const updateSnackValidation = validateReqBody(UpdateSnackBodyDto);
 

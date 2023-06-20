@@ -13,6 +13,7 @@ import globalErrorMiddleware from "./middlewares/error";
 import {routeNotFoundError} from "./middlewares/error/errors";
 import userRouter from "./users/user.router";
 import snackRouter from "./snacks/snacks.router";
+import orderRouter from "./orders/order.router";
 import gameSessionsRouter from "./game-sessions/gameSessions.router";
 
 //_________EXPRESS_APP_________//
@@ -67,6 +68,7 @@ app.use("/api/users", userRouter);
 app.use("/api/devices", deviceRouter);
 app.use("/api/game-sessions", gameSessionsRouter);
 app.use("/api/snacks", snackRouter);
+app.use("/api/orders", orderRouter);
 
 // 2) 404 Urls
 app.all("*", routeNotFoundError);

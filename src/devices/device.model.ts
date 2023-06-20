@@ -11,6 +11,7 @@ export interface DeviceDocument extends Document {
   startTime: number | null;
   endTime: number | null;
   isEmpty: boolean;
+  order: Types.ObjectId;
 }
 
 const deviceSchema = new Schema<DeviceDocument>(
@@ -47,6 +48,10 @@ const deviceSchema = new Schema<DeviceDocument>(
     isEmpty: {
       type: Boolean,
       default: true,
+    },
+    order: {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
     },
   },
   {timestamps: true}

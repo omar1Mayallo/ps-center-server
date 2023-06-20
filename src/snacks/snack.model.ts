@@ -5,7 +5,7 @@ export interface SnackDocument extends Document {
   name: string;
   buyingPrice: number;
   sellingPrice: number;
-  quantity: number;
+  quantityInStock: number;
   sold: number;
 }
 
@@ -26,7 +26,7 @@ const snackSchema = new Schema<SnackDocument>(
       type: Number,
       required: [true, "Snack selling price is required"],
     },
-    quantity: {
+    quantityInStock: {
       type: Number,
       required: [true, "Snack quantity is required"],
     },

@@ -13,5 +13,4 @@ export default cleanEnv(process.env, {
   DB_NAME: str(),
   JWT_SECRET: str(),
   JWT_EXPIRE_IN: str(),
-  JWT_COOKIE_EXPIRE_IN: num(),
 });
