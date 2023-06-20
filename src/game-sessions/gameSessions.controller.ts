@@ -79,13 +79,13 @@ const deleteSingleGameSession: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
 );
 
 // ---------------------------------
-// @desc    Delete Single Game Session
-// @route   DELETE  /game-sessions/:id
+// @desc    Delete All Game Sessions
+// @route   DELETE  /game-sessions
 // @access  Private("OWNER")
 // ---------------------------------
-const deleteAllGameSessions: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
+const deleteAllGameSessions: RequestHandler = asyncHandler(
   async (req, res, next) => {
-    const result = await Session.deleteMany();
+    await Session.deleteMany();
     res.status(NO_CONTENT).json({
       status: "success",
     });

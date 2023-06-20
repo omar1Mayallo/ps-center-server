@@ -8,3 +8,10 @@ export default class APIError extends Error {
     this.isOperational = true;
   }
 }
+
+export class CustomError extends APIError {
+  code?: number;
+  path?: string;
+  value?: string;
+  errors?: Error[];
+}

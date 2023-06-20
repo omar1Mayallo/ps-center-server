@@ -1,7 +1,13 @@
 import {NextFunction, Request, Response} from "express";
 import {INTERNAL_SERVER_ERROR} from "http-status";
-import APIError from "../../utils/ApiError";
-import {handleJwtExpiredError, handleJwtInvalidError} from "./errors";
+import APIError, {CustomError} from "../../utils/ApiError";
+import {
+  handleCastError,
+  handleDuplicationError,
+  handleJwtExpiredError,
+  handleJwtInvalidError,
+  handleValidationError,
+} from "./errors";
 
 // ERRORS-For(NODE_ENV === "development")
 const sendErrorToDev = (err: APIError, res: Response) => {
@@ -41,9 +47,16 @@ const globalErrorMiddleware = (
   if (process.env.NODE_ENV === "development") {
     sendErrorToDev(err, res);
   } else if (process.env.NODE_ENV === "production") {
-    if (err.name === "JsonWebTokenError") err = handleJwtInvalidError();
-    if (err.name === "TokenExpiredError") err = handleJwtExpiredError();
-    sendErrorToProd(err, res);
+    // NOT good practice to override an argument (ex: err = handleCastError(err)) of function
+    let error: CustomError = {...err, name: err.name, message: err.message};
+
+    if (error.name === "CastError") error = handleCastError(error);
+    if (error.code === 11000) error = handleDuplicationError(error);
+    if (error.name === "ValidationError") error = handleValidationError(error);
+    if (error.name === "JsonWebTokenError") error = handleJwtInvalidError();
+    if (error.name === "TokenExpiredError") error = handleJwtExpiredError();
+
+    sendErrorToProd(error, res);
   }
 };
 
