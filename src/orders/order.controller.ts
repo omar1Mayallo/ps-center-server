@@ -37,32 +37,6 @@ const createOrder: RequestHandler<unknown, unknown /*,CreateSnackBodyDto*/> =
       );
     }
 
-    // [2]_CREATE_ORDER_LOGIC
-    // 1) For Creating Order generally
-    const orderItem: OrderItem = {
-      snack: snack._id,
-      price: snack.sellingPrice,
-      quantity: quantity,
-    };
-
-    const order = await Order.create({
-      orderItems: [orderItem],
-      orderPrice: snack.sellingPrice * quantity,
-    });
-
-    // [3]_UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-    const bulkOption = order.orderItems.map(({snack, quantity}) => ({
-      updateOne: {
-        filter: {_id: snack},
-        update: {
-          $inc: {quantityInStock: -quantity, sold: +quantity},
-        },
-      },
-    }));
-    // bulkWrite[https://www.mongodb.com/docs/manual/reference/method/db.collection.bulkWrite/][https://stackoverflow.com/questions/59730402/how-does-the-bulkwrite-operation-in-mongodb-work]
-    await Snack.bulkWrite(bulkOption);
-
-    // 2) For Creating Order From Specific Device
     if (deviceId) {
       const device = await Device.findById(deviceId);
       // CHECK_POSSIBLE_ERRORS
@@ -76,6 +50,31 @@ const createOrder: RequestHandler<unknown, unknown /*,CreateSnackBodyDto*/> =
       if (device.isEmpty || !device.startTime) {
         return next(new APIError(`This device is Empty Now`, BAD_REQUEST));
       }
+      // c) Device Already Has Order
+      if (device.order) {
+        return next(
+          new APIError(`Device already has progressed order`, BAD_REQUEST)
+        );
+      }
+
+      // [2]_CREATE_ORDER_LOGIC
+      // 1) For Creating Order generally
+      const orderItem: OrderItem = {
+        snack: snack._id,
+        price: snack.sellingPrice,
+        quantity: quantity,
+      };
+
+      const order = await Order.create({
+        orderItems: [orderItem],
+        orderPrice: snack.sellingPrice * quantity,
+        type: "IN_DEVICE",
+      });
+
+      // [3]_UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
+      snack.quantityInStock -= quantity;
+      snack.sold += quantity;
+      await snack.save();
 
       device.order = order._id;
       await device.save();
@@ -88,6 +87,23 @@ const createOrder: RequestHandler<unknown, unknown /*,CreateSnackBodyDto*/> =
         },
       });
     } else {
+      const orderItem: OrderItem = {
+        snack: snack._id,
+        price: snack.sellingPrice,
+        quantity: quantity,
+      };
+
+      const order = await Order.create({
+        orderItems: [orderItem],
+        orderPrice: snack.sellingPrice * quantity,
+        type: "OUT_DEVICE",
+      });
+
+      // [3]_UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
+      snack.quantityInStock -= quantity;
+      snack.sold += quantity;
+      await snack.save();
+
       res.status(CREATED).json({
         status: "success",
         data: {
@@ -127,17 +143,20 @@ const addNewSnackToOrder: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
     const snackIdx = order.orderItems.findIndex(
       (item) => item.snack.toString() === snackId
     );
-    // findIndex !== -1 =>> item is not exist in orderItems[]
+    // findIndex !== -1 =>> item has index so it exist in orderItems[]
     if (snackIdx !== -1) {
       const orderItem = order.orderItems[snackIdx];
       // BEFORE we qty++
-      // Check if available snack qty exist
+      // Check if available snack qty >> orderItem qty++ and update snack(qtyInStock, soldTimes)
       if (snack.quantityInStock > 0) {
         orderItem.quantity += 1;
         order.orderItems[snackIdx] = orderItem;
-      }
-      // throw err
-      else {
+
+        // UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
+        snack.quantityInStock -= 1;
+        snack.sold += 1;
+        await snack.save();
+      } else {
         return next(
           new APIError(`Maximum quantity can you added`, BAD_REQUEST)
         );
@@ -165,30 +184,22 @@ const addNewSnackToOrder: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
         quantity,
       };
       order.orderItems.push(newOrderItem);
+
+      // UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
+      snack.quantityInStock -= quantity;
+      snack.sold += quantity;
+      await snack.save();
     }
 
-    // [3]_RE_CALC_ORDER_PRICE
+    // [4]_RE_CALC_ORDER_PRICE
     let itemsPrice = 0;
     order.orderItems.forEach(
       ({price, quantity}) => (itemsPrice += price * quantity)
     );
     order.orderPrice = itemsPrice;
 
-    // [4]_AFTER_ALL_UPDATES_SAVING_ORDER
+    // [5]_AFTER_ALL_UPDATES_SAVING_ORDER
     await order.save();
-
-    // [5]_UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-    const bulkOption = order.orderItems.map(({snack, quantity}) => ({
-      updateOne: {
-        filter: {_id: snack},
-        update: {
-          $inc: {quantityInStock: -quantity, sold: +quantity},
-        },
-      },
-    }));
-
-    // bulkWrite[https://www.mongodb.com/docs/manual/reference/method/db.collection.bulkWrite/][https://stackoverflow.com/questions/59730402/how-does-the-bulkwrite-operation-in-mongodb-work]
-    await Snack.bulkWrite(bulkOption);
 
     res.status(OK).json({
       status: "success",

@@ -205,13 +205,26 @@ const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
         ? device.duoPricePerHour * estimatedTimeInHours
         : device.multiPricePerHour * estimatedTimeInHours;
 
+    // Add orderPrice if order added to the device
+    let ordPrice: number = 0;
+    if (device.order) {
+      const device = await Device.findById(id).populate({
+        path: "order",
+        select: "orderPrice",
+      });
+      const {orderPrice}: any = device?.order;
+      ordPrice = orderPrice;
+    }
+
+    const sessionPrice = ordPrice ? ordPrice + gamePrice : gamePrice;
+
     //5) Create a new game session
     const session = await Session.create({
       device: device._id,
       type: device.sessionType,
       estimatedTimeInHours,
       gamePrice,
-      sessionPrice: gamePrice, // add snack order price when i create snacks logic
+      sessionPrice: sessionPrice,
     });
 
     //6) If session created >> Reset Device
@@ -224,6 +237,7 @@ const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
             startTime: null,
             endTime: null,
             isEmpty: true,
+            order: null,
           },
         },
         {runValidators: false} // Disable validators
@@ -262,7 +276,7 @@ const resetSingleDevice: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
         sessionType: "DUO",
         isEmpty: true,
         // $unset[https://www.mongodb.com/docs/manual/reference/operator/update/unset/][https://stackoverflow.com/questions/6327893/mongodb-update-modifier-semantics-of-unset]
-        $unset: {["startTime"]: 1, ["endTime"]: 1},
+        $unset: {["startTime"]: 1, ["endTime"]: 1, ["order"]: 1},
       },
       {
         new: true,
@@ -295,7 +309,7 @@ const resetAllDevices: RequestHandler = asyncHandler(async (req, res, next) => {
       sessionType: "DUO",
       isEmpty: true,
       // $unset[https://www.mongodb.com/docs/manual/reference/operator/update/unset/][https://stackoverflow.com/questions/6327893/mongodb-update-modifier-semantics-of-unset]
-      $unset: {["startTime"]: 1, ["endTime"]: 1},
+      $unset: {["startTime"]: 1, ["endTime"]: 1, ["order"]: 1},
     }
   );
 
