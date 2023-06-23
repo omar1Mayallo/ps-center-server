@@ -6,13 +6,14 @@ import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
 import Order, {OrderItem} from "./order.model";
 import Snack from "../snacks/snack.model";
 import Device from "../devices/device.model";
+import {AddSnackToOrderBodyDto, CreateOrderBodyDto} from "./order.dto";
 
 // ---------------------------------
 // @desc    Create Order
 // @route   POST  /orders
 // @access  Private("OWNER")
 // ---------------------------------
-const createOrder: RequestHandler<unknown, unknown /*,CreateSnackBodyDto*/> =
+const createOrder: RequestHandler<unknown, unknown, CreateOrderBodyDto> =
   asyncHandler(async (req, res, next) => {
     const {snackId, quantity, deviceId} = req.body;
     // [1]_CHECK_POSSIBLE_ERRORS
@@ -118,97 +119,97 @@ const createOrder: RequestHandler<unknown, unknown /*,CreateSnackBodyDto*/> =
 // @route   PATCH  /orders/:id/add-item
 // @access  Private("OWNER")
 // ---------------------------------
-const addNewSnackToOrder: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
-  async (req, res, next) => {
-    const {id} = req.params;
-    const {snackId, quantity} = req.body;
-    // [1]_CHECK_POSSIBLE_ERRORS
-    // a)_Order_Not_Found
-    const order = await Order.findById(id);
-    if (!order) {
-      return next(
-        new APIError(`There is no order match this id : ${id}`, NOT_FOUND)
-      );
-    }
-    // b)_Snack_Not_Found
-    const snack = await Snack.findById(snackId);
-    if (!snack) {
-      return next(
-        new APIError(`There is no snack match this id : ${snackId}`, NOT_FOUND)
-      );
-    }
-
-    // [2] ADD_NEW_ORDER_ITEM_LOGIC
-    // a) If snack order item is already exist in orderItems[] =>> qty++
-    const snackIdx = order.orderItems.findIndex(
-      (item) => item.snack.toString() === snackId
+const addNewSnackToOrder: RequestHandler<
+  ParamIsMongoIdDto,
+  unknown,
+  AddSnackToOrderBodyDto
+> = asyncHandler(async (req, res, next) => {
+  const {id} = req.params;
+  const {snackId, quantity} = req.body;
+  // [1]_CHECK_POSSIBLE_ERRORS
+  // a)_Order_Not_Found
+  const order = await Order.findById(id);
+  if (!order) {
+    return next(
+      new APIError(`There is no order match this id : ${id}`, NOT_FOUND)
     );
-    // findIndex !== -1 =>> item has index so it exist in orderItems[]
-    if (snackIdx !== -1) {
-      const orderItem = order.orderItems[snackIdx];
-      // BEFORE we qty++
-      // Check if available snack qty >> orderItem qty++ and update snack(qtyInStock, soldTimes)
-      if (snack.quantityInStock > 0) {
-        orderItem.quantity += 1;
-        order.orderItems[snackIdx] = orderItem;
+  }
+  // b)_Snack_Not_Found
+  const snack = await Snack.findById(snackId);
+  if (!snack) {
+    return next(
+      new APIError(`There is no snack match this id : ${snackId}`, NOT_FOUND)
+    );
+  }
 
-        // UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-        snack.quantityInStock -= 1;
-        snack.sold += 1;
-        await snack.save();
-      } else {
-        return next(
-          new APIError(`Maximum quantity can you added`, BAD_REQUEST)
-        );
-      }
-    }
-    // b) If snack order item is not exist in orderItems[] =>> push it
-    else {
-      //_CHECK_POSSIBLE_ERRORS
-      // Missing Qty
-      if (!quantity) {
-        return next(new APIError(`Please enter a quantity`, BAD_REQUEST));
-      }
-      // Qty entered > available snack qty
-      if (quantity > snack.quantityInStock) {
-        return next(
-          new APIError(
-            `Quantity is more than the available snack quantity`,
-            NOT_FOUND
-          )
-        );
-      }
-      const newOrderItem = {
-        snack: snackId,
-        price: snack.sellingPrice,
-        quantity,
-      };
-      order.orderItems.push(newOrderItem);
+  // [2] ADD_NEW_ORDER_ITEM_LOGIC
+  // a) If snack order item is already exist in orderItems[] =>> qty++
+  const snackIdx = order.orderItems.findIndex(
+    (item) => item.snack.toString() === snackId
+  );
+  // findIndex !== -1 =>> item has index so it exist in orderItems[]
+  if (snackIdx !== -1) {
+    const orderItem = order.orderItems[snackIdx];
+    // BEFORE we qty++
+    // Check if available snack qty >> orderItem qty++ and update snack(qtyInStock, soldTimes)
+    if (snack.quantityInStock > 0) {
+      orderItem.quantity += 1;
+      order.orderItems[snackIdx] = orderItem;
 
       // UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-      snack.quantityInStock -= quantity;
-      snack.sold += quantity;
+      snack.quantityInStock -= 1;
+      snack.sold += 1;
       await snack.save();
+    } else {
+      return next(new APIError(`Maximum quantity can you added`, BAD_REQUEST));
     }
-
-    // [4]_RE_CALC_ORDER_PRICE
-    let itemsPrice = 0;
-    order.orderItems.forEach(
-      ({price, quantity}) => (itemsPrice += price * quantity)
-    );
-    order.orderPrice = itemsPrice;
-
-    // [5]_AFTER_ALL_UPDATES_SAVING_ORDER
-    await order.save();
-
-    res.status(OK).json({
-      status: "success",
-      data: {
-        order,
-      },
-    });
   }
-);
+  // b) If snack order item is not exist in orderItems[] =>> push it
+  else {
+    //_CHECK_POSSIBLE_ERRORS
+    // Missing Qty
+    if (!quantity) {
+      return next(new APIError(`Please enter a quantity`, BAD_REQUEST));
+    }
+    // Qty entered > available snack qty
+    if (quantity > snack.quantityInStock) {
+      return next(
+        new APIError(
+          `Quantity is more than the available snack quantity`,
+          NOT_FOUND
+        )
+      );
+    }
+    const newOrderItem = {
+      snack: snackId,
+      price: snack.sellingPrice,
+      quantity,
+    } as any;
+    order.orderItems.push(newOrderItem);
+
+    // UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
+    snack.quantityInStock -= quantity;
+    snack.sold += quantity;
+    await snack.save();
+  }
+
+  // [4]_RE_CALC_ORDER_PRICE
+  let itemsPrice = 0;
+  order.orderItems.forEach(
+    ({price, quantity}) => (itemsPrice += price * quantity)
+  );
+  order.orderPrice = itemsPrice;
+
+  // [5]_AFTER_ALL_UPDATES_SAVING_ORDER
+  await order.save();
+
+  res.status(OK).json({
+    status: "success",
+    data: {
+      order,
+    },
+  });
+});
 
 // ---------------------------------
 // @desc    Get All Orders
