@@ -1,8 +1,8 @@
 import {RequestHandler} from "express";
 import asyncHandler from "express-async-handler";
 import {CREATED, NOT_FOUND, NO_CONTENT, OK} from "http-status";
-import APIError from "../utils/ApiError";
-import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
+import APIError from "../../utils/ApiError";
+import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
 import Snack from "./snack.model";
 import {CreateSnackBodyDto, UpdateSnackBodyDto} from "./snack.dto";
 

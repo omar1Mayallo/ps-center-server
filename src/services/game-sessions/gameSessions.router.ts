@@ -1,12 +1,12 @@
 import express from "express";
-import {allowedTo, isAuth} from "../middlewares/auth";
+import {allowedTo, isAuth} from "../../middlewares/auth";
 import {
   getAllGameSessions,
   getSingleGameSession,
   deleteSingleGameSession,
   deleteAllGameSessions,
 } from "./gameSessions.controller";
-import {paramIsMongoIdValidation} from "../middlewares/validation/validators";
+import {paramIsMongoIdValidation} from "../../middlewares/validation/validators";
 
 const router = express.Router();
 

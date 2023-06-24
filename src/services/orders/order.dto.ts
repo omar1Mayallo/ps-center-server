@@ -5,7 +5,7 @@ import {
   IsString,
   IsMongoId,
 } from "class-validator";
-import {validateReqBody} from "../middlewares/validation";
+import {validateReqBody} from "../../middlewares/validation";
 
 // CREATE_ORDER
 class CreateOrderBodyDto {

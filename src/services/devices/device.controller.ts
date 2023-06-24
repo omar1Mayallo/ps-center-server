@@ -8,10 +8,10 @@ import {
   NO_CONTENT,
   OK,
 } from "http-status";
-import APIError from "../utils/ApiError";
+import APIError from "../../utils/ApiError";
 import {CreateDeviceBodyDto, UpdateDeviceBodyDto} from "./device.dto";
 import Device from "./device.model";
-import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
+import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
 import Session, {SessionTypes} from "../game-sessions/gameSessions.model";
 
 // ---------------------------------

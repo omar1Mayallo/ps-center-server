@@ -1,5 +1,5 @@
 import express from "express";
-import {allowedTo, isAuth} from "../middlewares/auth";
+import {allowedTo, isAuth} from "../../middlewares/auth";
 import {
   createOrder,
   getAllOrders,
@@ -7,7 +7,7 @@ import {
   deleteSingleOrder,
   addNewSnackToOrder,
 } from "./order.controller";
-import {paramIsMongoIdValidation} from "../middlewares/validation/validators";
+import {paramIsMongoIdValidation} from "../../middlewares/validation/validators";
 import {createOrderValidation, addSnackToOrderValidation} from "./order.dto";
 
 const router = express.Router();

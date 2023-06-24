@@ -1,9 +1,9 @@
-import asyncHandler from "express-async-handler";
 import {RequestHandler} from "express";
-import APIError from "../utils/ApiError";
+import asyncHandler from "express-async-handler";
 import {BAD_REQUEST, CREATED, OK} from "http-status";
+import APIError from "../../utils/ApiError";
+import {generateSendToken} from "../../utils/tokenHandler";
 import User from "../users/user.model";
-import {generateSendToken} from "../utils/tokenHandler";
 import {UserLoginDto, UserRegisterDto} from "./auth.dto";
 
 // ---------------------------------

@@ -1,5 +1,5 @@
 import {IsNotEmpty, IsNumber, IsOptional, IsString} from "class-validator";
-import {validateReqBody} from "../middlewares/validation";
+import {validateReqBody} from "../../middlewares/validation";
 
 // CREATE_SNACK
 class CreateSnackBodyDto {

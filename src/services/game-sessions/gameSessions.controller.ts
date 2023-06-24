@@ -1,9 +1,9 @@
 import {RequestHandler} from "express";
 import asyncHandler from "express-async-handler";
-import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
-import Session from "./gameSessions.model";
-import APIError from "../utils/ApiError";
 import {NOT_FOUND, NO_CONTENT, OK} from "http-status";
+import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
+import APIError from "../../utils/ApiError";
+import Session from "./gameSessions.model";
 
 // ---------------------------------
 // @desc    Get All Sessions
@@ -93,8 +93,8 @@ const deleteAllGameSessions: RequestHandler = asyncHandler(
 );
 
 export {
-  getAllGameSessions,
-  getSingleGameSession,
   deleteAllGameSessions,
   deleteSingleGameSession,
+  getAllGameSessions,
+  getSingleGameSession,
 };

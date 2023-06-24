@@ -5,7 +5,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
-import {validateReqBody} from "../middlewares/validation";
+import {validateReqBody} from "../../middlewares/validation";
 
 // LOGIN
 class UserLoginDto {

@@ -1,7 +1,7 @@
 import {NextFunction, Request, Response} from "express";
 import asyncHandler from "express-async-handler";
 import {NOT_FOUND} from "http-status";
-import APIError from "../utils/ApiError";
+import APIError from "../../utils/ApiError";
 import User, {UserDocument} from "./user.model";
 
 interface AuthRequest extends Request {

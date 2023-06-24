@@ -1,7 +1,7 @@
 import {NextFunction, Request, Response} from "express";
 import asyncHandler from "express-async-handler";
 import {FORBIDDEN, UNAUTHORIZED} from "http-status";
-import User, {UserDocument} from "../../users/user.model";
+import User, {UserDocument} from "../../services/users/user.model";
 import APIError from "../../utils/ApiError";
 import {verifyToken} from "../../utils/tokenHandler";
 

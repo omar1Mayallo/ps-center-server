@@ -1,5 +1,5 @@
 import express from "express";
-import {allowedTo, isAuth} from "../middlewares/auth";
+import {allowedTo, isAuth} from "../../middlewares/auth";
 import {
   createDevice,
   deleteSingleDevice,
@@ -12,7 +12,7 @@ import {
   resetAllDevices,
 } from "./device.controller";
 import {createDeviceValidation, updateDeviceValidation} from "./device.dto";
-import {paramIsMongoIdValidation} from "../middlewares/validation/validators";
+import {paramIsMongoIdValidation} from "../../middlewares/validation/validators";
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 import {Response} from "express";
 import jwt from "jsonwebtoken";
 import env from "../config/env";
-import {UserDocument} from "../users/user.model";
+import {UserDocument} from "../services/users/user.model";
 
 //_SIGN_TOKEN_//
 function signToken(payload: string) {

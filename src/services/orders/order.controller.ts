@@ -1,8 +1,8 @@
 import {RequestHandler} from "express";
 import asyncHandler from "express-async-handler";
 import {BAD_REQUEST, CREATED, NOT_FOUND, NO_CONTENT, OK} from "http-status";
-import APIError from "../utils/ApiError";
-import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
+import APIError from "../../utils/ApiError";
+import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
 import Order, {OrderItem} from "./order.model";
 import Snack from "../snacks/snack.model";
 import Device from "../devices/device.model";

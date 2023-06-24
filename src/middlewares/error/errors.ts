@@ -2,7 +2,6 @@ import {RequestHandler} from "express";
 import {BAD_REQUEST, NOT_FOUND, UNAUTHORIZED} from "http-status";
 import server from "../..";
 import APIError, {CustomError} from "../../utils/ApiError";
-import {CastError} from "mongoose";
 
 // @ERROR_TYPE 404_ROUTES
 const routeNotFoundError: RequestHandler = (req, _, next) => {

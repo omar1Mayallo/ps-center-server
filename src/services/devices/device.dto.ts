@@ -6,7 +6,7 @@ import {
   MinLength,
   MaxLength,
 } from "class-validator";
-import {validateReqBody} from "../middlewares/validation";
+import {validateReqBody} from "../../middlewares/validation";
 
 // CREATE_DEVICE
 class CreateDeviceBodyDto {

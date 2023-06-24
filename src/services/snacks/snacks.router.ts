@@ -1,7 +1,7 @@
 import express from "express";
-import {allowedTo, isAuth} from "../middlewares/auth";
+import {allowedTo, isAuth} from "../../middlewares/auth";
 
-import {paramIsMongoIdValidation} from "../middlewares/validation/validators";
+import {paramIsMongoIdValidation} from "../../middlewares/validation/validators";
 import {
   createSnack,
   getAllSnacks,
