@@ -1,12 +1,23 @@
 import {RequestHandler} from "express";
 import asyncHandler from "express-async-handler";
 import {BAD_REQUEST, CREATED, NOT_FOUND, NO_CONTENT, OK} from "http-status";
-import APIError from "../../utils/ApiError";
+import mongoose from "mongoose";
 import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
-import Order, {OrderItem} from "./order.model";
-import Snack from "../snacks/snack.model";
+import APIError from "../../utils/ApiError";
 import Device from "../devices/device.model";
+import Snack, {SnackDocument} from "../snacks/snack.model";
 import {AddSnackToOrderBodyDto, CreateOrderBodyDto} from "./order.dto";
+import Order, {OrderItem} from "./order.model";
+
+// @Refactoring Update Snack After Ordering
+async function updateSnackAfterOrdering(
+  snack: SnackDocument,
+  quantity?: number
+) {
+  snack.quantityInStock -= quantity || 1;
+  snack.sold += quantity || 1;
+  await snack.save();
+}
 
 // ---------------------------------
 // @desc    Create Order
@@ -16,102 +27,86 @@ import {AddSnackToOrderBodyDto, CreateOrderBodyDto} from "./order.dto";
 const createOrder: RequestHandler<unknown, unknown, CreateOrderBodyDto> =
   asyncHandler(async (req, res, next) => {
     const {snackId, quantity, deviceId} = req.body;
-    // [1]_CHECK_POSSIBLE_ERRORS
-    // a)User_Entered_Missing_Data
+
+    // [1]_VALIDATE_REQ.BODY_INPUTS
     if (!snackId || !quantity) {
       return next(new APIError(`Please add snack and quantity`, BAD_REQUEST));
     }
+
+    // [2]_FIND&VALIDATE_SNACK
     const snack = await Snack.findById(snackId);
-    // b)Snack_Not_Found
     if (!snack) {
       return next(
         new APIError(`There is no snack match this id : ${snackId}`, NOT_FOUND)
       );
     }
-    // c)Is_Valid_Entered_Qty
-    if (quantity > snack.quantityInStock || snack.quantityInStock <= 0) {
+    if (snack.quantityInStock <= 0) {
+      return next(new APIError(`This snack is out of stock now`, BAD_REQUEST));
+    }
+
+    // [3]_VALIDATE_QUANTITY_ENTERED
+    if (quantity > snack.quantityInStock) {
       return next(
         new APIError(
-          `Invalid quantity, snack is out of stock or quantity is more than available snack quantity`,
+          `Quantity entered is more than available quantity`,
           BAD_REQUEST
         )
       );
     }
 
+    // [4]_FOR_CREATE_ORDER_LOGIC
+    let orderType = "OUT_DEVICE";
+    let device = null;
+
+    // (A)_FROM_DEVICE
     if (deviceId) {
-      const device = await Device.findById(deviceId);
-      // CHECK_POSSIBLE_ERRORS
-      // a) Device Not Found
+      // a)_FIND&VALIDATE_DEVICE
+      device = await Device.findById(deviceId);
       if (!device) {
         return next(
           new APIError(`There is no device with id ${deviceId}`, BAD_REQUEST)
         );
       }
-      // b) Device Empty Now
       if (device.isEmpty || !device.startTime) {
         return next(new APIError(`This device is Empty Now`, BAD_REQUEST));
       }
-      // c) Device Already Has Order
       if (device.order) {
         return next(
-          new APIError(`Device already has progressed order`, BAD_REQUEST)
+          new APIError(`This device already has progressed order`, BAD_REQUEST)
         );
       }
+      // b)_PUT_ORDER_TYPE_FROM_DEVICE
+      orderType = "IN_DEVICE";
+    }
 
-      // [2]_CREATE_ORDER_LOGIC
-      // 1) For Creating Order generally
-      const orderItem: OrderItem = {
-        snack: snack._id,
-        price: snack.sellingPrice,
-        quantity: quantity,
-      };
+    // (B)_CREATE_ORDER
+    const orderItem: OrderItem = {
+      snack: snack._id,
+      price: snack.sellingPrice,
+      quantity,
+    };
+    const order = await Order.create({
+      orderItems: [orderItem],
+      orderPrice: snack.sellingPrice * quantity,
+      type: orderType,
+    });
 
-      const order = await Order.create({
-        orderItems: [orderItem],
-        orderPrice: snack.sellingPrice * quantity,
-        type: "IN_DEVICE",
-      });
+    // (C)_AFTER_CREATING_ORDER
+    // a)_UPDATE_SNACK(quantityInStock, sold)
+    await updateSnackAfterOrdering(snack, quantity);
 
-      // [3]_UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-      snack.quantityInStock -= quantity;
-      snack.sold += quantity;
-      await snack.save();
-
+    // b)_UPDATE_DEVICE(order)
+    if (device) {
       device.order = order._id;
       await device.save();
-
-      res.status(CREATED).json({
-        status: "success",
-        data: {
-          order,
-          device,
-        },
-      });
-    } else {
-      const orderItem: OrderItem = {
-        snack: snack._id,
-        price: snack.sellingPrice,
-        quantity: quantity,
-      };
-
-      const order = await Order.create({
-        orderItems: [orderItem],
-        orderPrice: snack.sellingPrice * quantity,
-        type: "OUT_DEVICE",
-      });
-
-      // [3]_UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-      snack.quantityInStock -= quantity;
-      snack.sold += quantity;
-      await snack.save();
-
-      res.status(CREATED).json({
-        status: "success",
-        data: {
-          order,
-        },
-      });
     }
+
+    res.status(CREATED).json({
+      status: "success",
+      data: {
+        order,
+      },
+    });
   });
 
 // ---------------------------------
@@ -126,15 +121,21 @@ const addNewSnackToOrder: RequestHandler<
 > = asyncHandler(async (req, res, next) => {
   const {id} = req.params;
   const {snackId, quantity} = req.body;
-  // [1]_CHECK_POSSIBLE_ERRORS
-  // a)_Order_Not_Found
+
+  // [1]_VALIDATE_REQ.BODY_INPUTS
+  if (!snackId) {
+    return next(new APIError(`Please enter a snack id`, BAD_REQUEST));
+  }
+
+  // [2]_FIND&VALIDATE_ORDER
   const order = await Order.findById(id);
   if (!order) {
     return next(
       new APIError(`There is no order match this id : ${id}`, NOT_FOUND)
     );
   }
-  // b)_Snack_Not_Found
+
+  // [3]_FIND&VALIDATE_SNACK
   const snack = await Snack.findById(snackId);
   if (!snack) {
     return next(
@@ -142,36 +143,30 @@ const addNewSnackToOrder: RequestHandler<
     );
   }
 
-  // [2] ADD_NEW_ORDER_ITEM_LOGIC
-  // a) If snack order item is already exist in orderItems[] =>> qty++
+  // [4]_ADD_NEW_ORDER_ITEM_LOGIC
+  // (A) If snack orderItem is already exist in orderItems[] =>> qty++
   const snackIdx = order.orderItems.findIndex(
     (item) => item.snack.toString() === snackId
   );
-  // findIndex !== -1 =>> item has index so it exist in orderItems[]
   if (snackIdx !== -1) {
     const orderItem = order.orderItems[snackIdx];
-    // BEFORE we qty++
-    // Check if available snack qty >> orderItem qty++ and update snack(qtyInStock, soldTimes)
+    // a) BEFORE we update snack orderItem qty++ , CHECK if available snack.quantityInStock
     if (snack.quantityInStock > 0) {
       orderItem.quantity += 1;
       order.orderItems[snackIdx] = orderItem;
 
-      // UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-      snack.quantityInStock -= 1;
-      snack.sold += 1;
-      await snack.save();
+      // b) AFTER update snack orderItem qty++, UPDATE snack(quantityInStock, sold)
+      await updateSnackAfterOrdering(snack);
     } else {
       return next(new APIError(`Maximum quantity can you added`, BAD_REQUEST));
     }
   }
-  // b) If snack order item is not exist in orderItems[] =>> push it
+  // (B) If snack orderItem is not exist in orderItems[] =>> push it
   else {
-    //_CHECK_POSSIBLE_ERRORS
-    // Missing Qty
+    // a) VALIDATE_ENTERED_QUANTITY
     if (!quantity) {
       return next(new APIError(`Please enter a quantity`, BAD_REQUEST));
     }
-    // Qty entered > available snack qty
     if (quantity > snack.quantityInStock) {
       return next(
         new APIError(
@@ -180,27 +175,27 @@ const addNewSnackToOrder: RequestHandler<
         )
       );
     }
-    const newOrderItem = {
-      snack: snackId,
+
+    // b) PUSH a new orderItem to orderItems[]
+    const newOrderItem: OrderItem = {
+      snack: new mongoose.Types.ObjectId(snackId),
       price: snack.sellingPrice,
       quantity,
-    } as any;
+    };
     order.orderItems.push(newOrderItem);
 
-    // UPDATE_SNACK ==> quantityInStock(decrease) - sold(increase)
-    snack.quantityInStock -= quantity;
-    snack.sold += quantity;
-    await snack.save();
+    // c) AFTER push snack orderItem, UPDATE snack(quantityInStock, sold)
+    await updateSnackAfterOrdering(snack);
   }
 
-  // [4]_RE_CALC_ORDER_PRICE
+  // [5]_RE_CALC_ORDER_PRICE
   let itemsPrice = 0;
   order.orderItems.forEach(
     ({price, quantity}) => (itemsPrice += price * quantity)
   );
   order.orderPrice = itemsPrice;
 
-  // [5]_AFTER_ALL_UPDATES_SAVING_ORDER
+  // [6]_AFTER_ALL_UPDATES_SAVING_ORDER
   await order.save();
 
   res.status(OK).json({
@@ -282,9 +277,9 @@ const deleteSingleOrder: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
 );
 
 export {
+  addNewSnackToOrder,
   createOrder,
+  deleteSingleOrder,
   getAllOrders,
   getSingleOrder,
-  deleteSingleOrder,
-  addNewSnackToOrder,
 };
