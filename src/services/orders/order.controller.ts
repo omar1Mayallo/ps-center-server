@@ -30,6 +30,13 @@ const getSingleOrder = CRUDOrder.getOne;
 // ---------------------------------
 const deleteSingleOrder = CRUDOrder.deleteOne;
 
+// ---------------------------------
+// @desc    Get All Orders
+// @route   GET  /orders
+// @access  Private("OWNER")
+// ---------------------------------
+const getAllOrders = CRUDOrder.getAll;
+
 // @Refactoring Update Snack(qty--, sold++) After Ordering
 async function updateSnackAfterOrdering(
   snack: SnackDocument,
@@ -222,28 +229,6 @@ const addNewSnackToOrder: RequestHandler<
     status: "success",
     data: {
       order,
-    },
-  });
-});
-
-// ---------------------------------
-// @desc    Get All Orders
-// @route   GET  /orders
-// @access  Private("OWNER")
-// ---------------------------------
-const getAllOrders: RequestHandler = asyncHandler(async (req, res, next) => {
-  const docs = await Order.find()
-    .sort("-createdAt")
-    .populate({
-      path: "orderItems.snack",
-      select: "name sellingPrice quantityInStock",
-    })
-    .select("-__v");
-  res.status(OK).json({
-    status: "success",
-    results: docs.length,
-    data: {
-      docs,
     },
   });
 });

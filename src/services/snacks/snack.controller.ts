@@ -43,16 +43,7 @@ const deleteSingleSnack = CRUDSnacks.deleteOne;
 // @route   GET  /snacks
 // @access  Private("OWNER")
 // ---------------------------------
-const getAllSnacks: RequestHandler = asyncHandler(async (req, res, next) => {
-  const docs = await Snack.find().sort("-createdAt").select("-__v");
-  res.status(OK).json({
-    status: "success",
-    results: docs.length,
-    data: {
-      docs,
-    },
-  });
-});
+const getAllSnacks = CRUDSnacks.getAll;
 
 export {
   createSnack,

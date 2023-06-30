@@ -4,6 +4,7 @@ import {CREATED, NOT_FOUND, NO_CONTENT, OK} from "http-status";
 import {RequestHandler} from "express";
 import {ParamIsMongoIdDto} from "../middlewares/validation/validators";
 import {PopulateOptions} from "mongoose";
+import APIFeatures, {docsFilter} from "./ApiFeatures";
 
 export default class CRUDController<CreateT, UpdateT> {
   constructor(
@@ -86,6 +87,34 @@ export default class CRUDController<CreateT, UpdateT> {
     await this.Model.deleteMany();
     res.status(NO_CONTENT).json({
       status: "success",
+    });
+  });
+
+  getAll: RequestHandler = asyncHandler(async (req, res, next) => {
+    //_TOTAL_NUM_OF_DOCUMENTS_//
+    const totalNumOfDocs = await this.Model.countDocuments(
+      docsFilter(req.query)
+    );
+
+    // Build query
+    const apiFeatures = new APIFeatures(this.Model.find({}), req.query)
+      .filter()
+      .sort()
+      .fields()
+      .paginate(totalNumOfDocs);
+
+    const {query, paginationStatus} = apiFeatures;
+
+    //Execute query
+    const docs = await query;
+
+    res.status(OK).json({
+      status: "success",
+      totalNumOfDocs,
+      paginationStatus,
+      data: {
+        docs,
+      },
     });
   });
 }

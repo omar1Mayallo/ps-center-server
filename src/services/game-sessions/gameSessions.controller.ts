@@ -34,24 +34,7 @@ const deleteAllGameSessions = CRUDSessions.deleteAll;
 // @route   GET  /game-sessions
 // @access  Private("ADMIN", "OWNER")
 // ---------------------------------
-const getAllGameSessions: RequestHandler = asyncHandler(
-  async (req, res, next) => {
-    const docs = await Session.find()
-      .populate({
-        path: "device",
-        select: "name type sessionType",
-      })
-      .sort("-createdAt")
-      .select("-__v");
-    res.status(200).json({
-      status: "success",
-      results: docs.length,
-      data: {
-        docs,
-      },
-    });
-  }
-);
+const getAllGameSessions = CRUDSessions.getAll;
 
 export {
   deleteAllGameSessions,

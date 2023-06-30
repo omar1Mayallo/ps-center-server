@@ -54,16 +54,7 @@ const deleteSingleDevice = CRUDDevices.deleteOne;
 // @route   GET  /devices
 // @access  Private("ADMIN", "OWNER")
 // ---------------------------------
-const getAllDevices: RequestHandler = asyncHandler(async (req, res, next) => {
-  const docs = await Device.find().sort("-createdAt").select("-__v");
-  res.status(OK).json({
-    status: "success",
-    results: docs.length,
-    data: {
-      docs,
-    },
-  });
-});
+const getAllDevices = CRUDDevices.getAll;
 
 // ---------------------------------
 // @desc    Start Time
