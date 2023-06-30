@@ -1,7 +1,7 @@
 export const docsFilter = (queryString: any) => {
-  // a) exclude "sort", "fields", "keyword", "page", "limit" from query params
+  // a) exclude "sort", "fields", "page", "limit" from query params
   const queryObject = {...queryString};
-  const excludesFields = ["sort", "fields", "keyword", "page", "limit"];
+  const excludesFields = ["sort", "fields", "page", "limit"];
   excludesFields.forEach((field) => delete queryObject[field]);
   // b) filter by [$gte,$gt,$lte,$lt] operators
   let queryStr = JSON.stringify(queryObject);
@@ -54,7 +54,7 @@ export default class APIFeatures {
     return this;
   }
 
-  // 5) PAGINATION
+  // 4) PAGINATION
   paginate(totalNumOfDocs: number) {
     const page = this.queryString.page * 1 || 1;
     const limit = this.queryString.limit * 1 || 30;

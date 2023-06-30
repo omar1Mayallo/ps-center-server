@@ -1,7 +1,7 @@
-import mongoose, {Document, Schema, Types} from "mongoose";
 import bcrypt from "bcrypt";
+import mongoose, {Document, Schema, Types} from "mongoose";
 
-enum UserRoles {
+export enum UserRoles {
   USER = "USER",
   ADMIN = "ADMIN",
   OWNER = "OWNER",
