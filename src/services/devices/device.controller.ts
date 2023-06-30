@@ -9,7 +9,11 @@ import {
   OK,
 } from "http-status";
 import APIError from "../../utils/ApiError";
-import {CreateDeviceBodyDto, UpdateDeviceBodyDto} from "./device.dto";
+import {
+  CreateDeviceBodyDto,
+  UpdateDeviceBodyDto,
+  UpdateDeviceSessionTypeBodyDto,
+} from "./device.dto";
 import Device from "./device.model";
 import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
 import Session, {SessionTypes} from "../game-sessions/gameSessions.model";
@@ -55,6 +59,40 @@ const deleteSingleDevice = CRUDDevices.deleteOne;
 // @access  Private("ADMIN", "OWNER")
 // ---------------------------------
 const getAllDevices = CRUDDevices.getAll;
+
+// ---------------------------------
+// @desc    Update Device SessionType
+// @route   PATCH  /devices/:id/session-type
+// @access  Private("OWNER", "ADMIN")
+// ---------------------------------
+const updateDeviceSessionType: RequestHandler<
+  ParamIsMongoIdDto,
+  unknown,
+  UpdateDeviceSessionTypeBodyDto
+> = asyncHandler(async (req, res, next) => {
+  const {id} = req.params;
+  const {sessionType} = req.body;
+
+  const doc = await Device.findByIdAndUpdate(
+    id,
+    {sessionType},
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+  if (!doc) {
+    return next(
+      new APIError(`There is no document match this id : ${id}`, NOT_FOUND)
+    );
+  }
+  res.status(OK).json({
+    status: "success",
+    data: {
+      doc,
+    },
+  });
+});
 
 // ---------------------------------
 // @desc    Start Time
@@ -269,4 +307,5 @@ export {
   endTime,
   resetSingleDevice,
   resetAllDevices,
+  updateDeviceSessionType,
 };

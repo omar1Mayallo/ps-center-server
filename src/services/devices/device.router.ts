@@ -10,8 +10,13 @@ import {
   endTime,
   resetSingleDevice,
   resetAllDevices,
+  updateDeviceSessionType,
 } from "./device.controller";
-import {createDeviceValidation, updateDeviceValidation} from "./device.dto";
+import {
+  createDeviceValidation,
+  updateDeviceSessionTypeValidation,
+  updateDeviceValidation,
+} from "./device.dto";
 import {paramIsMongoIdValidation} from "../../middlewares/validation/validators";
 
 const router = express.Router();
@@ -31,6 +36,10 @@ router
   .get(getSingleDevice)
   .put(updateDeviceValidation, updateSingleDevice)
   .delete(deleteSingleDevice);
+
+router
+  .route("/:id/session-type")
+  .patch(updateDeviceSessionTypeValidation, updateDeviceSessionType);
 
 router.route("/:id/start-time").patch(startTime);
 router.route("/:id/end-time").post(endTime);

@@ -3,10 +3,12 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsEnum,
   MinLength,
   MaxLength,
 } from "class-validator";
 import {validateReqBody} from "../../middlewares/validation";
+import {SessionTypes} from "../game-sessions/gameSessions.model";
 
 // CREATE_DEVICE
 class CreateDeviceBodyDto {
@@ -50,9 +52,21 @@ class UpdateDeviceBodyDto {
 }
 const updateDeviceValidation = validateReqBody(UpdateDeviceBodyDto);
 
+// UPDATE_DEVICE_SESSION_TYPE
+class UpdateDeviceSessionTypeBodyDto {
+  @IsEnum(SessionTypes)
+  @IsNotEmpty()
+  sessionType!: string;
+}
+const updateDeviceSessionTypeValidation = validateReqBody(
+  UpdateDeviceSessionTypeBodyDto
+);
+
 export {
+  updateDeviceValidation,
   UpdateDeviceBodyDto,
+  UpdateDeviceSessionTypeBodyDto,
+  updateDeviceSessionTypeValidation,
   CreateDeviceBodyDto,
   createDeviceValidation,
-  updateDeviceValidation,
 };
