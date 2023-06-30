@@ -8,8 +8,29 @@ import Device from "../devices/device.model";
 import Snack, {SnackDocument} from "../snacks/snack.model";
 import {AddSnackToOrderBodyDto, CreateOrderBodyDto} from "./order.dto";
 import Order, {OrderItem} from "./order.model";
+import CRUDController from "../../utils/CrudController";
 
-// @Refactoring Update Snack After Ordering
+// ORDERS_CRUD_INSTANCE
+const CRUDOrder = new CRUDController(Order, {
+  path: "orderItems.snack",
+  select: "name sellingPrice quantityInStock",
+});
+
+// ---------------------------------
+// @desc    Get Single Order
+// @route   GET  /orders/:id
+// @access  Private("OWNER")
+// ---------------------------------
+const getSingleOrder = CRUDOrder.getOne;
+
+// ---------------------------------
+// @desc    Delete Single Order
+// @route   DELETE  /orders/:id
+// @access  Private("OWNER")
+// ---------------------------------
+const deleteSingleOrder = CRUDOrder.deleteOne;
+
+// @Refactoring Update Snack(qty--, sold++) After Ordering
 async function updateSnackAfterOrdering(
   snack: SnackDocument,
   quantity?: number
@@ -18,7 +39,6 @@ async function updateSnackAfterOrdering(
   snack.sold += quantity || 1;
   await snack.save();
 }
-
 // ---------------------------------
 // @desc    Create Order
 // @route   POST  /orders
@@ -227,54 +247,6 @@ const getAllOrders: RequestHandler = asyncHandler(async (req, res, next) => {
     },
   });
 });
-
-// ---------------------------------
-// @desc    Get Single Order
-// @route   GET  /orders/:id
-// @access  Private("OWNER")
-// ---------------------------------
-const getSingleOrder: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
-  async (req, res, next) => {
-    const {id} = req.params;
-    const doc = await Order.findById(id)
-      .populate({
-        path: "orderItems.snack",
-        select: "name sellingPrice quantityInStock",
-      })
-      .select("-__v");
-    if (!doc) {
-      return next(
-        new APIError(`There is no Order match this id : ${id}`, NOT_FOUND)
-      );
-    }
-    res.status(OK).json({
-      status: "success",
-      data: {
-        doc,
-      },
-    });
-  }
-);
-
-// ---------------------------------
-// @desc    Delete Single Order
-// @route   DELETE  /orders/:id
-// @access  Private("OWNER")
-// ---------------------------------
-const deleteSingleOrder: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
-  async (req, res, next) => {
-    const {id} = req.params;
-    const doc = await Order.findByIdAndDelete(id);
-    if (!doc) {
-      return next(
-        new APIError(`There is no Order match this id : ${id}`, NOT_FOUND)
-      );
-    }
-    res.status(NO_CONTENT).json({
-      status: "success",
-    });
-  }
-);
 
 export {
   addNewSnackToOrder,

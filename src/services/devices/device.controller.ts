@@ -13,22 +13,41 @@ import {CreateDeviceBodyDto, UpdateDeviceBodyDto} from "./device.dto";
 import Device from "./device.model";
 import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
 import Session, {SessionTypes} from "../game-sessions/gameSessions.model";
+import CRUDController from "../../utils/CrudController";
+
+// DEVICES_CRUD_INSTANCE
+const CRUDDevices = new CRUDController<
+  CreateDeviceBodyDto,
+  UpdateDeviceBodyDto
+>(Device);
 
 // ---------------------------------
 // @desc    Create Device
 // @route   POST  /devices
 // @access  Private("OWNER")
 // ---------------------------------
-const createDevice: RequestHandler<unknown, unknown, CreateDeviceBodyDto> =
-  asyncHandler(async (req, res, next) => {
-    const doc = await Device.create(req.body);
-    res.status(CREATED).json({
-      status: "success",
-      data: {
-        doc,
-      },
-    });
-  });
+const createDevice = CRUDDevices.createOne;
+
+// ---------------------------------
+// @desc    Get Single Device
+// @route   GET  /devices/:id
+// @access  Private("OWNER")
+// ---------------------------------
+const getSingleDevice = CRUDDevices.getOne;
+
+// ---------------------------------
+// @desc    Update Single Device
+// @route   PUT  /devices/:id
+// @access  Private("OWNER")
+// ---------------------------------
+const updateSingleDevice = CRUDDevices.updateOne;
+
+// ---------------------------------
+// @desc    Delete Single Device
+// @route   DELETE  /devices/:id
+// @access  Private("OWNER")
+// ---------------------------------
+const deleteSingleDevice = CRUDDevices.deleteOne;
 
 // ---------------------------------
 // @desc    Get All Devices
@@ -45,78 +64,6 @@ const getAllDevices: RequestHandler = asyncHandler(async (req, res, next) => {
     },
   });
 });
-
-// ---------------------------------
-// @desc    Get Single Device
-// @route   GET  /devices/:id
-// @access  Private("OWNER")
-// ---------------------------------
-const getSingleDevice: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
-  async (req, res, next) => {
-    const {id} = req.params;
-    const doc = await Device.findById(id).select("-__v");
-    if (!doc) {
-      return next(
-        new APIError(`There is no device match this id : ${id}`, NOT_FOUND)
-      );
-    }
-    res.status(OK).json({
-      status: "success",
-      data: {
-        doc,
-      },
-    });
-  }
-);
-
-// ---------------------------------
-// @desc    Update Single Device
-// @route   PUT  /devices/:id
-// @access  Private("OWNER")
-// ---------------------------------
-const updateSingleDevice: RequestHandler<
-  ParamIsMongoIdDto,
-  unknown,
-  UpdateDeviceBodyDto
-> = asyncHandler(async (req, res, next) => {
-  const {id} = req.params;
-
-  const doc = await Device.findByIdAndUpdate(id, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  if (!doc) {
-    return next(
-      new APIError(`There is no device match this id : ${id}`, NOT_FOUND)
-    );
-  }
-  res.status(OK).json({
-    status: "success",
-    data: {
-      doc,
-    },
-  });
-});
-
-// ---------------------------------
-// @desc    Delete Single Device
-// @route   DELETE  /devices/:id
-// @access  Private("OWNER")
-// ---------------------------------
-const deleteSingleDevice: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
-  async (req, res, next) => {
-    const {id} = req.params;
-    const doc = await Device.findByIdAndDelete(id);
-    if (!doc) {
-      return next(
-        new APIError(`There is no device match this id : ${id}`, NOT_FOUND)
-      );
-    }
-    res.status(NO_CONTENT).json({
-      status: "success",
-    });
-  }
-);
 
 // ---------------------------------
 // @desc    Start Time

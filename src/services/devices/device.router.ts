@@ -16,7 +16,7 @@ import {paramIsMongoIdValidation} from "../../middlewares/validation/validators"
 
 const router = express.Router();
 
-router.use(isAuth);
+// router.use(isAuth);
 // router.use(allowedTo("OWNER"));
 
 router.route("/").get(getAllDevices);

@@ -1,6 +1,5 @@
 import express from "express";
 import {allowedTo, isAuth} from "../../middlewares/auth";
-
 import {paramIsMongoIdValidation} from "../../middlewares/validation/validators";
 import {
   createSnack,
@@ -14,7 +13,7 @@ import {createSnackValidation, updateSnackValidation} from "./snack.dto";
 const router = express.Router();
 
 router.use(isAuth);
-// router.use(allowedTo("OWNER"));
+router.use(allowedTo("OWNER"));
 
 router.route("/").get(getAllSnacks);
 
