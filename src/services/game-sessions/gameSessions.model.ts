@@ -42,6 +42,14 @@ const gameSessionSchema = new mongoose.Schema<GameSessionDocument>(
   {timestamps: true}
 );
 
+gameSessionSchema.pre<GameSessionDocument>("find", function (next) {
+  this.populate({
+    path: "device",
+    select: "name type",
+  });
+  next();
+});
+
 const Session = mongoose.model<GameSessionDocument>(
   "Session",
   gameSessionSchema

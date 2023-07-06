@@ -56,7 +56,7 @@ const updateDeviceValidation = validateReqBody(UpdateDeviceBodyDto);
 class UpdateDeviceSessionTypeBodyDto {
   @IsEnum(SessionTypes)
   @IsNotEmpty()
-  sessionType!: string;
+  sessionType!: SessionTypes;
 }
 const updateDeviceSessionTypeValidation = validateReqBody(
   UpdateDeviceSessionTypeBodyDto

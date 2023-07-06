@@ -18,6 +18,7 @@ import Device from "./device.model";
 import {ParamIsMongoIdDto} from "../../middlewares/validation/validators";
 import Session, {SessionTypes} from "../game-sessions/gameSessions.model";
 import CRUDController from "../../utils/CrudController";
+import Order, {OrderStatus} from "../orders/order.model";
 
 // DEVICES_CRUD_INSTANCE
 const CRUDDevices = new CRUDController<
@@ -72,24 +73,24 @@ const updateDeviceSessionType: RequestHandler<
 > = asyncHandler(async (req, res, next) => {
   const {id} = req.params;
   const {sessionType} = req.body;
-
-  const doc = await Device.findByIdAndUpdate(
-    id,
-    {sessionType},
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
-  if (!doc) {
+  // CHECK_DEVICE
+  const device = await Device.findById(id);
+  if (!device) {
     return next(
-      new APIError(`There is no document match this id : ${id}`, NOT_FOUND)
+      new APIError(`There is no device match this id : ${id}`, NOT_FOUND)
     );
   }
+  if (device?.startTime || !device?.isEmpty) {
+    return next(new APIError(`This device is not empty now`, BAD_REQUEST));
+  }
+
+  device.sessionType = sessionType;
+  await device.save();
+
   res.status(OK).json({
     status: "success",
     data: {
-      doc,
+      device,
     },
   });
 });
@@ -203,8 +204,13 @@ const endTime: RequestHandler<ParamIsMongoIdDto> = asyncHandler(
       sessionPrice: sessionPrice,
     });
 
-    //6) If session created >> Reset Device
+    //6) If session created >> Reset Device, Make DeviceOrder DONE
     if (session) {
+      if (device.order) {
+        await Order.findByIdAndUpdate(device.order, {
+          status: OrderStatus.DONE,
+        });
+      }
       await Device.updateOne(
         {_id: id},
         {

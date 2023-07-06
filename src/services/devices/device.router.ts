@@ -18,14 +18,15 @@ import {
   updateDeviceValidation,
 } from "./device.dto";
 import {paramIsMongoIdValidation} from "../../middlewares/validation/validators";
+import {UserRoles} from "../users/user.model";
 
 const router = express.Router();
 
-// router.use(isAuth);
-// router.use(allowedTo("OWNER"));
+router.use(isAuth);
 
 router.route("/").get(getAllDevices);
 
+router.use(allowedTo(UserRoles.OWNER, UserRoles.ADMIN));
 router.route("/").post(createDeviceValidation, createDevice);
 
 router.route("/reset").put(resetAllDevices);

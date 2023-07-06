@@ -9,16 +9,16 @@ import {
   deleteSingleSnack,
 } from "./snack.controller";
 import {createSnackValidation, updateSnackValidation} from "./snack.dto";
+import {UserRoles} from "../users/user.model";
 
 const router = express.Router();
 
 router.use(isAuth);
-router.use(allowedTo("OWNER"));
 
 router.route("/").get(getAllSnacks);
 
+router.use(allowedTo(UserRoles.OWNER));
 router.route("/").post(createSnackValidation, createSnack);
-
 router.use("/:id", paramIsMongoIdValidation);
 router
   .route("/:id")

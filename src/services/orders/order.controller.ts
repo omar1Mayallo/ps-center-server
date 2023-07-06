@@ -7,13 +7,13 @@ import APIError from "../../utils/ApiError";
 import Device from "../devices/device.model";
 import Snack, {SnackDocument} from "../snacks/snack.model";
 import {AddSnackToOrderBodyDto, CreateOrderBodyDto} from "./order.dto";
-import Order, {OrderItem} from "./order.model";
+import Order, {OrderItem, OrderStatus, OrderTypes} from "./order.model";
 import CRUDController from "../../utils/CrudController";
 
 // ORDERS_CRUD_INSTANCE
 const CRUDOrder = new CRUDController(Order, {
   path: "orderItems.snack",
-  select: "name sellingPrice quantityInStock",
+  select: "name",
 });
 
 // ---------------------------------
@@ -29,6 +29,13 @@ const getSingleOrder = CRUDOrder.getOne;
 // @access  Private("OWNER")
 // ---------------------------------
 const deleteSingleOrder = CRUDOrder.deleteOne;
+
+// ---------------------------------
+// @desc    Delete All Orders
+// @route   DELETE  /orders
+// @access  Private("OWNER")
+// ---------------------------------
+const deleteAllOrders = CRUDOrder.deleteAll;
 
 // ---------------------------------
 // @desc    Get All Orders
@@ -82,8 +89,9 @@ const createOrder: RequestHandler<unknown, unknown, CreateOrderBodyDto> =
     }
 
     // [4]_FOR_CREATE_ORDER_LOGIC
-    let orderType = "OUT_DEVICE";
+    let orderType = OrderTypes.OUT_DEVICE;
     let device = null;
+    let orderStatus = OrderStatus.DONE;
 
     // (A)_FROM_DEVICE
     if (deviceId) {
@@ -103,7 +111,8 @@ const createOrder: RequestHandler<unknown, unknown, CreateOrderBodyDto> =
         );
       }
       // b)_PUT_ORDER_TYPE_FROM_DEVICE
-      orderType = "IN_DEVICE";
+      orderType = OrderTypes.IN_DEVICE;
+      orderStatus = OrderStatus.IN_PROGRESS;
     }
 
     // (B)_CREATE_ORDER
@@ -116,6 +125,7 @@ const createOrder: RequestHandler<unknown, unknown, CreateOrderBodyDto> =
       orderItems: [orderItem],
       orderPrice: snack.sellingPrice * quantity,
       type: orderType,
+      status: orderStatus,
     });
 
     // (C)_AFTER_CREATING_ORDER
@@ -160,6 +170,9 @@ const addNewSnackToOrder: RequestHandler<
     return next(
       new APIError(`There is no order match this id : ${id}`, NOT_FOUND)
     );
+  }
+  if (order.status === OrderStatus.DONE) {
+    return next(new APIError(`This order already DONE`, BAD_REQUEST));
   }
 
   // [3]_FIND&VALIDATE_SNACK
@@ -233,10 +246,103 @@ const addNewSnackToOrder: RequestHandler<
   });
 });
 
+const getOrderMonthlyProfits: RequestHandler = asyncHandler(
+  async (req, res, next) => {
+    const profits = await Order.aggregate([
+      {
+        $group: {
+          _id: {
+            month: {$month: "$createdAt"},
+            year: {$year: "$createdAt"},
+            type: "$type",
+          },
+          value: {$sum: "$orderPrice"},
+        },
+      },
+    ]);
+    res.status(OK).json({
+      status: "success",
+      data: {
+        profits,
+      },
+    });
+  }
+);
+
+const getOrdersTypesPercentage: RequestHandler = asyncHandler(
+  async (req, res, next) => {
+    /*
+    1. **$group** stage (Grouping by Order Type):
+      - `_id: "$type"`: Groups the documents by the `type` field, which represents the order type (`IN_DEVICE` or `OUT_DEVICE`).
+      - `count: { $sum: 1 }`: Calculates the count of documents for each order type. The `$sum` operator increments the count by 1 for each document.
+
+    2. **$group** stage (Calculating Total and Creating Array of Order Type Counts):
+      - `_id: null`: Groups all the documents together without any specific grouping criteria.
+      - `total: { $sum: "$count" }`: Calculates the total count by summing up the `count` field from the previous grouping stage.
+      - `orderTypes`: Creates an array of order type counts using the `$push` operator. Each element in the array contains the order type (`_id`) and its corresponding count.
+
+    3. **$project** stage (Calculating Percentages and Formatting the Output):
+      - `_id: 0`: Excludes the `_id` field from the output.
+      - `InDevicepercentage`: Calculates the percentage for the `IN_DEVICE` order type.
+        - `{ $arrayElemAt: ["$orderTypes.count", 0] }`: Retrieves the count of the `IN_DEVICE` order type from the `orderTypes` array.
+        - `{ $divide: [...] }`: Divides the count of `IN_DEVICE` order type by the `total` count to get the fraction.
+        - `{ $multiply: [..., 100] }`: Multiplies the fraction by 100 to get the percentage.
+      - `OutDevicepercentage`: Calculates the percentage for the `OUT_DEVICE` order type using a similar approach.
+    */
+    const percentage = await Order.aggregate([
+      {
+        $group: {
+          _id: "$type",
+          count: {$sum: 1},
+        },
+      },
+
+      {
+        $group: {
+          _id: null,
+          total: {$sum: "$count"},
+          orderTypes: {
+            $push: {
+              type: "$_id",
+              count: "$count",
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          InDevicePercentage: {
+            $multiply: [
+              {$divide: [{$arrayElemAt: ["$orderTypes.count", 0]}, "$total"]},
+              100,
+            ],
+          },
+          OutDevicePercentage: {
+            $multiply: [
+              {$divide: [{$arrayElemAt: ["$orderTypes.count", 1]}, "$total"]},
+              100,
+            ],
+          },
+        },
+      },
+    ]);
+    res.status(OK).json({
+      status: "success",
+      data: {
+        percentage,
+      },
+    });
+  }
+);
+
 export {
   addNewSnackToOrder,
   createOrder,
   deleteSingleOrder,
   getAllOrders,
+  deleteAllOrders,
   getSingleOrder,
+  getOrderMonthlyProfits,
+  getOrdersTypesPercentage,
 };
