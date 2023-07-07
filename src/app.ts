@@ -70,7 +70,7 @@ app.use("/api/devices", deviceRouter);
 app.use("/api/game-sessions", gameSessionsRouter);
 app.use("/api/snacks", snackRouter);
 app.use("/api/orders", orderRouter);
-app.get("api/docs-counts", getDocsCount);
+app.get("/api/docs-counts", getDocsCount);
 
 // 2) 404 Urls
 app.all("*", routeNotFoundError);
