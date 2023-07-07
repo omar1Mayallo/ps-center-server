@@ -15,6 +15,7 @@ import snackRouter from "./services/snacks/snacks.router";
 import orderRouter from "./services/orders/order.router";
 import gameSessionsRouter from "./services/game-sessions/gameSessions.router";
 import authRouter from "./services/auth/auth.router";
+import getDocsCount from "./services";
 
 //_________EXPRESS_APP_________//
 const app = express();
@@ -69,6 +70,7 @@ app.use("/api/devices", deviceRouter);
 app.use("/api/game-sessions", gameSessionsRouter);
 app.use("/api/snacks", snackRouter);
 app.use("/api/orders", orderRouter);
+app.get("api/docs-counts", getDocsCount);
 
 // 2) 404 Urls
 app.all("*", routeNotFoundError);
