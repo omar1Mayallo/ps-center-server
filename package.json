@@ -5,7 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "prod": "SET NODE_ENV=production& nodemon src/index.ts"
+    "prod": "SET NODE_ENV=production& nodemon src/index.ts",
+    "build": "npm install && tsc",
+    "start": "TG_ALLOW_MIXED=ALLOW  node build/index.js"
   },
   "author": "OTM",
   "license": "ISC",

@@ -1,6 +1,7 @@
 # Dependency directories
 /node_modules
 /dist
+/build
 
 # TypeScript build artifacts
 /*.js
